@@ -7,7 +7,7 @@ const Quiz = db.define('quiz', {
   description: Sequelize.STRING,
   link: {
     type: Sequelize.STRING,
-    defaultValue: uuidV4(),
+    // defaultValue: uuidV4(),
   }
 });
 
