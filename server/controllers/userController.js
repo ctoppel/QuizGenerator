@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const Models = require('../models');
+const jwt = require('jsonwebtoken');
+
 const SALT_WORK_FACTOR = 10;
 
 // Method that is going to check the credentials against our database.
@@ -22,14 +24,15 @@ function validate(req, res, next) {
       const passwordMatch = bcrypt.compareSync(req.body.password, user.password);
       if (passwordMatch) {
         // We could check the user password in the database. Let's return it!
-        return res.status(200).json(user);
+        const myToken = jwt.sign({ email: req.body.email }, 'jwtsecret');
+        return res.status(200).json(myToken);
       } else {
         next(err);
       }
     }
   }).catch((err) => {
     next(err);
-  })
+  });
 }
 
 function signUp(req, res, next) {
@@ -47,12 +50,13 @@ function signUp(req, res, next) {
       const password = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(SALT_WORK_FACTOR));
       Models.User.create({
         email: req.body.email,
-        password: password
+        password,
       }).then((user) => {
-        return res.status(200).json(user);
+        const myToken = jwt.sign({ email: req.body.email }, 'jwtsecret');
+        return res.status(200).json(myToken);
       }).catch((err) => {
         next(err);
-      })
+      });
     } else {
       next(err);
     }

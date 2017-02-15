@@ -1,11 +1,15 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
-const port = process.env.PORT || 3000;
-const app = express();
-
 const quizzes = require('./routes/quizzes');
 const users = require('./routes/users');
+const db2 = require('./config/db');
+const User = require('./models/user');
+const passport = require('passport');
+// const expressJWT = require('express-jwt');
+
+const port = process.env.PORT || 3000;
+const app = express();
 
 if (process.env.NODE_ENV === 'development') {
   console.log('DEVELOPMENT MODE');
@@ -25,6 +29,14 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(passport.initialize());
+require('./config/passport')(passport);
+// app.use(expressJWT({
+//   secret: 'jwtsecret',
+// })
+// .unless({
+//   path: ['/', '/login', '/signup'],
+// }));
 app.use(express.static(path.join(__dirname, '..', 'client', 'build')));
 
 app.use('/api/quizzes', quizzes);
@@ -41,7 +53,7 @@ const db = require('./models/db');
 app.get('/quiz/:uniqueLink', (req, res, next) => {
   Models.Quiz
     .findOne({
-      where: { link: req.params.uniqueLink }
+      where: { link: req.params.uniqueLink },
     })
     .then((quiz) => {
       if (!quiz) {
@@ -75,11 +87,11 @@ app.get('/quiz/:uniqueLink', (req, res, next) => {
           return questions[0];
         })
         .then((questions) => {
-          const prom = questions.map((question) => {
-            return db.query(`SELECT * FROM answers WHERE "questionId" = ${question.id}`).then((answers) => {
-              return answers[0];
-            });
-          });
+         const prom = questions.map((question) => {
+           return db.query(`SELECT * FROM answers WHERE "questionId" = ${question.id}`).then((answers) => {
+             return answers[0];
+           });
+         });
 
           return Promise.all(prom);
         })
@@ -95,8 +107,7 @@ app.get('/quiz/:uniqueLink', (req, res, next) => {
         .catch((err) => {
           next(err);
         });
-
-    })
+    });
 });
 
 app.get('*', (req, res) => {
